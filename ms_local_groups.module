@@ -92,12 +92,3 @@ function ms_local_groups_fetch_and_sync() {
   }
 }
 
-function ms_local_groups_delete_all() {
-  $query = new EntityFieldQuery();
-              $query->entityCondition('entity_type', 'taxonomy_term');
-              $query->entityCondition('bundle', 'ms_local_group', '=');
-              $result = $query->execute();
-  foreach ($result['taxonomy_term'] as $term) {
-    taxonomy_term_delete($term->tid);
-  }
-}

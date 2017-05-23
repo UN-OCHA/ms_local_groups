@@ -1,0 +1,103 @@
+<?php
+/**
+ * @file
+ * ms_local_groups.module file
+ */
+
+/**
+ * Implements hook_cron()
+ * Synchronizes and fetches local groups from www.humanitarianresponse.info/api/v1.0/bundles on cron
+ */
+function ms_local_groups_cron() {
+  ms_local_groups_fetch_and_sync();
+}
+
+/**
+ * Fetch and sync local groups from www.humanitarianresponse.info/api/v1.0/bundles.
+ */
+function ms_local_groups_fetch_and_sync() {
+  $languages = array(
+    'en',
+    'fr',
+    'es'
+  );
+  $installed_languages = array_keys(language_list());
+
+  foreach ($languages as $language) {
+    if (in_array($language, $installed_languages)) {
+      $url = 'https://www.humanitarianresponse.info/'.$language.'/api/v1.0/bundles';
+
+      while(TRUE) {
+        $request = drupal_http_request($url);
+        if (isset($request->data)) {
+          $data = drupal_json_decode($request->data);
+          if (empty($data['data'])) {
+            return;
+          }
+
+          foreach ($data['data'] as $item) {
+            if (isset($item['label']) && $item['label'] && isset($item['id']) && $item['id']) {
+              $label = $item['label'];
+              if (isset($item['operation']) && isset($item['operation'][0]) && isset($item['operation'][0]['label'])) {
+                $label = $item['operation'][0]['label'] . ': '.$item['label'];
+              }
+              $query = new EntityFieldQuery();
+              $query->entityCondition('entity_type', 'taxonomy_term');
+              $query->entityCondition('bundle', 'ms_local_group', '=');
+              $query->fieldCondition('field_ms_hrinfo_id', 'value', $item['id'], '=');
+              $result = $query->execute();
+
+              $term = new stdClass();
+              if (!isset($result['taxonomy_term'])) {
+                $vocabularies = taxonomy_vocabulary_get_names();
+                $term = (object) array(
+                  'vid' => $vocabularies['ms_local_group']->vid,
+                  'name' => $label,
+                  'vocabulary_machine_name' => 'ms_local_group'
+                );
+              }
+              else {
+                $tid = array_pop($result['taxonomy_term']);
+                $term = taxonomy_term_load($tid->tid);
+                if ($language != 'en' && !isset($term->translations->data[$language])) {
+                  $translation = array(
+                    'translate' => 0,
+                    'status' => 1,
+                    'language' => $language,
+                    'source' => 'en'
+                  );
+                  $handler = entity_translation_get_handler('taxonomy_term', $term);
+                  $handler->setTranslation($translation);
+                }
+              }
+
+              if ($language == 'en') {
+                $term->name = $label;
+              }
+              $term->name_field[$language][0]['value'] = $label;
+              $term->field_ms_hrinfo_id[LANGUAGE_NONE][0]['value'] = $item['id'];
+
+              taxonomy_term_save($term);
+            }
+          }
+          if (isset($data['next']) && isset($data['next']['href'])) {
+            $url = $data['next']['href'];
+          }
+          else {
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+function ms_local_groups_delete_all() {
+  $query = new EntityFieldQuery();
+              $query->entityCondition('entity_type', 'taxonomy_term');
+              $query->entityCondition('bundle', 'ms_local_group', '=');
+              $result = $query->execute();
+  foreach ($result['taxonomy_term'] as $term) {
+    taxonomy_term_delete($term->tid);
+  }
+}

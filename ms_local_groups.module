@@ -92,3 +92,19 @@ function ms_local_groups_fetch_and_sync() {
   }
 }
 
+/**
+ * Retrieve original bundle from hrinfo
+ */
+function ms_local_groups_fetch_original($id) {
+  $url = 'https://www.humanitarianresponse.info/api/v1.0/bundles/'.$id;
+  $request = drupal_http_request($url);
+  if (isset($request->data)) {
+    $data = drupal_json_decode($request->data);
+    $group = reset(reset($data));
+    return $group;
+  }
+  else {
+    return NULL;
+  }
+}
+

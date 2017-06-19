@@ -5,7 +5,8 @@
  */
 
 /**
- * Implements hook_cron()
+ * Implements hook_cron().
+ *
  * Synchronizes and fetches local groups from www.humanitarianresponse.info/api/v1.0/bundles on cron
  */
 function ms_local_groups_cron() {
@@ -13,21 +14,24 @@ function ms_local_groups_cron() {
 }
 
 /**
- * Fetch and sync local groups from www.humanitarianresponse.info/api/v1.0/bundles.
+ * Fetch and sync local groups.
+ *
+ * Fetch and sync local groups from
+ * www.humanitarianresponse.info/api/v1.0/bundles.
  */
 function ms_local_groups_fetch_and_sync() {
   $languages = array(
     'en',
     'fr',
-    'es'
+    'es',
   );
   $installed_languages = array_keys(language_list());
 
   foreach ($languages as $language) {
     if (in_array($language, $installed_languages)) {
-      $url = 'https://www.humanitarianresponse.info/'.$language.'/api/v1.0/bundles';
+      $url = 'https://www.humanitarianresponse.info/' . $language . '/api/v1.0/bundles';
 
-      while(TRUE) {
+      while (TRUE) {
         $request = drupal_http_request($url);
         if (isset($request->data)) {
           $data = drupal_json_decode($request->data);
@@ -39,7 +43,7 @@ function ms_local_groups_fetch_and_sync() {
             if (isset($item['label']) && $item['label'] && isset($item['id']) && $item['id']) {
               $label = $item['label'];
               if (isset($item['operation']) && isset($item['operation'][0]) && isset($item['operation'][0]['label'])) {
-                $label = $item['operation'][0]['label'] . ': '.$item['label'];
+                $label = $item['operation'][0]['label'] . ': '. $item['label'];
               }
               $query = new EntityFieldQuery();
               $query->entityCondition('entity_type', 'taxonomy_term');
@@ -53,7 +57,7 @@ function ms_local_groups_fetch_and_sync() {
                 $term = (object) array(
                   'vid' => $vocabularies['ms_local_group']->vid,
                   'name' => $label,
-                  'vocabulary_machine_name' => 'ms_local_group'
+                  'vocabulary_machine_name' => 'ms_local_group',
                 );
               }
               else {
@@ -64,7 +68,7 @@ function ms_local_groups_fetch_and_sync() {
                     'translate' => 0,
                     'status' => 1,
                     'language' => $language,
-                    'source' => 'en'
+                    'source' => 'en',
                   );
                   $handler = entity_translation_get_handler('taxonomy_term', $term);
                   $handler->setTranslation($translation);
@@ -93,10 +97,10 @@ function ms_local_groups_fetch_and_sync() {
 }
 
 /**
- * Retrieve original bundle from hrinfo
+ * Retrieve original bundle from hrinfo.
  */
 function ms_local_groups_fetch_original($id) {
-  $url = 'https://www.humanitarianresponse.info/api/v1.0/bundles/'.$id;
+  $url = 'https://www.humanitarianresponse.info/api/v1.0/bundles/' . $id;
   $request = drupal_http_request($url);
   if (isset($request->data)) {
     $data = drupal_json_decode($request->data);
@@ -107,4 +111,3 @@ function ms_local_groups_fetch_original($id) {
     return NULL;
   }
 }
-

@@ -7,7 +7,8 @@
 /**
  * Implements hook_cron().
  *
- * Synchronizes and fetches local groups from www.humanitarianresponse.info/api/v1.0/bundles on cron
+ * Synchronizes and fetches local groups from
+ * www.humanitarianresponse.info/api/v1.0/bundles on cron.
  */
 function ms_local_groups_cron() {
   ms_local_groups_fetch_and_sync();
@@ -43,7 +44,7 @@ function ms_local_groups_fetch_and_sync() {
             if (isset($item['label']) && $item['label'] && isset($item['id']) && $item['id']) {
               $label = $item['label'];
               if (isset($item['operation']) && isset($item['operation'][0]) && isset($item['operation'][0]['label'])) {
-                $label = $item['operation'][0]['label'] . ': '. $item['label'];
+                $label = $item['operation'][0]['label'] . ': ' . $item['label'];
               }
               $query = new EntityFieldQuery();
               $query->entityCondition('entity_type', 'taxonomy_term');

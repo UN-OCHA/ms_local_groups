@@ -11,7 +11,12 @@
  * www.humanitarianresponse.info/api/v1.0/bundles on cron.
  */
 function ms_local_groups_cron() {
-  ms_local_groups_fetch_and_sync();
+  $last_pull = variable_get('ms_local_groups_last_pull', 0);
+  $now = time();
+  if ($now - $last_pull > 24 * 3600) {
+    ms_local_groups_fetch_and_sync();
+    variable_set('ms_local_groups_last_pull', $now);
+  }
 }
 
 /**
